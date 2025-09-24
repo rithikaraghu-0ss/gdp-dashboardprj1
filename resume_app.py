@@ -7,7 +7,7 @@ import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Load spaCy model with auto-download if missing
+# Load spaCy English model with auto-download if not present
 try:
     nlp = spacy.load("en_core_web_sm")
 except OSError:
@@ -67,13 +67,16 @@ if st.button("Analyze"):
             names.append(file.name)
             skills_list.append(extract_skills(text))
             progress_bar.progress((idx+1)/total_files)
-        # Vectorize
+
+        # Vectorize resumes and job description
         vectorizer = TfidfVectorizer(stop_words="english")
         docs = [job_desc] + resumes
         tfidf_matrix = vectorizer.fit_transform(docs)
+
         jd_vec = tfidf_matrix[0:1]
         resume_vecs = tfidf_matrix[1:]
         similarities = cosine_similarity(jd_vec, resume_vecs).flatten()
+
         df = pd.DataFrame({
             "Resume": names,
             "Similarity_Score": similarities,
@@ -81,9 +84,12 @@ if st.button("Analyze"):
         })
         df["Similarity_Score (%)"] = (df["Similarity_Score"] * 100).round(2)
         df = df.sort_values(by="Similarity_Score", ascending=False).reset_index(drop=True)
+
         st.subheader("Ranked Resumes by Similarity")
         st.dataframe(df[["Resume", "Similarity_Score (%)", "Extracted_Skills"]])
+
         csv = df.to_csv(index=False).encode("utf-8")
         st.download_button("Download Results as CSV", data=csv, file_name="ranked_resumes.csv", mime="text/csv")
+
 
 
