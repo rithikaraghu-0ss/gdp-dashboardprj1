@@ -6,6 +6,14 @@ from docx import Document
 import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import spacy
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    import spacy.cli
+    spacy.cli.download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
+
 
 # Load spaCy English model (download before running: python -m spacy download en_core_web_sm)
 nlp = spacy.load("en_core_web_sm")
