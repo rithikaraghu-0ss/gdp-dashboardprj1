@@ -12,7 +12,7 @@ try:
     nlp = spacy.load("en_core_web_sm")
 except OSError:
     import spacy.cli
-    spacy.cli.download("en_core_web_sm")
+    spacy.cli.download("en_core_web_sm", "--user")
     nlp = spacy.load("en_core_web_sm")
 
 st.set_page_config(page_title="AI-Powered Resume Screening Tool", layout="wide")
