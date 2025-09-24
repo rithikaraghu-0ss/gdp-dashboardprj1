@@ -6,7 +6,8 @@ from docx import Document
 import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import spacy
+
+# Load spaCy model with auto-download if missing
 try:
     nlp = spacy.load("en_core_web_sm")
 except OSError:
@@ -14,11 +15,8 @@ except OSError:
     spacy.cli.download("en_core_web_sm")
     nlp = spacy.load("en_core_web_sm")
 
-
-# Load spaCy English model (download before running: python -m spacy download en_core_web_sm)
-nlp = spacy.load("en_core_web_sm")
-
 st.set_page_config(page_title="AI-Powered Resume Screening Tool", layout="wide")
+
 st.title("AI-Powered Resume Screening Tool")
 st.write("Upload resumes (PDF/DOCX/TXT) and paste a job description to rank candidates.")
 
@@ -42,7 +40,7 @@ def extract_text(uploaded_file):
             return data.decode("utf-8", errors="ignore")
         except Exception:
             return str(data)
-        
+
 def extract_skills(text, topn=10):
     doc = nlp(text)
     skills = [ent.text for ent in doc.ents if ent.label_ in ["ORG", "PERSON", "GPE", "LANGUAGE"]]
@@ -50,7 +48,6 @@ def extract_skills(text, topn=10):
     return ", ".join(unique_skills[:topn]) if unique_skills else "-"
 
 job_desc = st.text_area("Paste Job Description Here", height=200)
-
 uploaded_files = st.file_uploader("Upload Resumes (.pdf, .docx, .txt)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
 
 if st.button("Analyze"):
@@ -60,11 +57,9 @@ if st.button("Analyze"):
         resumes = []
         names = []
         skills_list = []
-
         progress_text = st.empty()
         progress_bar = st.progress(0)
         total_files = len(uploaded_files)
-
         for idx, file in enumerate(uploaded_files):
             progress_text.text(f"Processing file {idx+1} of {total_files}: {file.name}")
             text = extract_text(file)
@@ -72,16 +67,13 @@ if st.button("Analyze"):
             names.append(file.name)
             skills_list.append(extract_skills(text))
             progress_bar.progress((idx+1)/total_files)
-
         # Vectorize
         vectorizer = TfidfVectorizer(stop_words="english")
         docs = [job_desc] + resumes
         tfidf_matrix = vectorizer.fit_transform(docs)
-
         jd_vec = tfidf_matrix[0:1]
         resume_vecs = tfidf_matrix[1:]
         similarities = cosine_similarity(jd_vec, resume_vecs).flatten()
-
         df = pd.DataFrame({
             "Resume": names,
             "Similarity_Score": similarities,
@@ -89,10 +81,9 @@ if st.button("Analyze"):
         })
         df["Similarity_Score (%)"] = (df["Similarity_Score"] * 100).round(2)
         df = df.sort_values(by="Similarity_Score", ascending=False).reset_index(drop=True)
-
         st.subheader("Ranked Resumes by Similarity")
         st.dataframe(df[["Resume", "Similarity_Score (%)", "Extracted_Skills"]])
-
         csv = df.to_csv(index=False).encode("utf-8")
         st.download_button("Download Results as CSV", data=csv, file_name="ranked_resumes.csv", mime="text/csv")
+
 
